@@ -683,6 +683,104 @@
             transform: rotate(180deg);
         }
 
+        /* Chip Settings Editor */
+        .chip-settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .chip-setting-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+
+        .chip-setting-row input[type="number"] {
+            width: 90px;
+            padding: 6px 8px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .chip-setting-row input[type="text"] {
+            width: 80px;
+            padding: 6px 8px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .chip-setting-row input[type="color"] {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .chip-setting-row input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 2px;
+        }
+
+        .chip-setting-row input[type="color"]::-webkit-color-swatch {
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .chip-setting-row label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 40px;
+        }
+
+        .chip-remove-btn {
+            background: rgba(231, 76, 60, 0.3);
+            border: none;
+            color: #e74c3c;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            transition: all var(--transition-fast);
+        }
+
+        .chip-remove-btn:hover {
+            background: rgba(231, 76, 60, 0.5);
+        }
+
+        .chip-setting-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--accent-primary);
+        }
+
+        .chip-setting-row.inactive {
+            opacity: 0.5;
+        }
+
+        .chip-setting-row.inactive input:not([type="checkbox"]) {
+            opacity: 0.6;
+        }
+
         /* Player Controls */
         .player-controls {
             display: flex;
@@ -1554,9 +1652,13 @@
                     <button class="theme-btn" data-theme="minimal" onclick="setTheme('minimal')" title="Dark Minimal"></button>
                 </div>
 
-                <h4 style="color: var(--accent-secondary); margin: 20px 0 10px; transition: color var(--transition-normal);">Chip Colors</h4>
-                <div class="settings-grid" id="chipSettings">
+                <h4 style="color: var(--accent-secondary); margin: 20px 0 10px; transition: color var(--transition-normal);">Chip Values & Colors</h4>
+                <div class="chip-settings-list" id="chipSettings">
                     <!-- Generated dynamically -->
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn btn-secondary btn-small" onclick="addChip()">+ Add Chip</button>
+                    <button class="btn btn-secondary btn-small" onclick="resetChipsToDefault()">Reset to Defaults</button>
                 </div>
 
                 <h4 style="color: var(--accent-secondary); margin: 20px 0 10px; transition: color var(--transition-normal);">Payout Structure</h4>
@@ -1658,12 +1760,11 @@
         // CONFIGURATION
         // ===============================
         const defaultChips = [
-            { value: 25, color: '#2ecc71', name: 'Green' },
-            { value: 100, color: '#000', name: 'Black' },
-            { value: 500, color: '#9b59b6', name: 'Purple' },
-            { value: 1000, color: '#f39c12', name: 'Yellow' },
-            { value: 5000, color: '#e74c3c', name: 'Red' },
-            { value: 25000, color: '#3498db', name: 'Blue' }
+            { value: 25, color: '#ffffff', name: 'White', active: true },
+            { value: 100, color: '#3498db', name: 'Blue', active: true },
+            { value: 500, color: '#e74c3c', name: 'Red', active: true },
+            { value: 1000, color: '#2ecc71', name: 'Green', active: true },
+            { value: 2000, color: '#000000', name: 'Black', active: true }
         ];
 
         // ===============================
@@ -1684,7 +1785,7 @@
         let handForHand = false;
         let bubbleMode = false;
         let presentationMode = false;
-        let chips = [...defaultChips];
+        let chips = defaultChips.map(chip => ({...chip}));
         let audioContext = null;
         let currentTheme = 'default';
 
@@ -2038,12 +2139,65 @@
 
         function updateChipLegend() {
             const legend = document.getElementById('chipLegend');
-            legend.innerHTML = chips.map(chip => `
+            legend.innerHTML = chips.filter(chip => chip.active !== false).map(chip => `
                 <div class="chip">
                     <div class="chip-color" style="background: ${chip.color}"></div>
                     <span>${chip.value.toLocaleString()}</span>
                 </div>
             `).join('');
+        }
+
+        function renderChipSettings() {
+            const container = document.getElementById('chipSettings');
+            container.innerHTML = chips.map((chip, index) => `
+                <div class="chip-setting-row ${chip.active === false ? 'inactive' : ''}">
+                    <input type="checkbox" ${chip.active !== false ? 'checked' : ''} onchange="updateChipFromSettings(${index}, 'active', this.checked)" title="Active">
+                    <input type="color" value="${chip.color}" onchange="updateChipFromSettings(${index}, 'color', this.value)" title="Chip color">
+                    <label>Value</label>
+                    <input type="number" value="${chip.value}" min="1" onchange="updateChipFromSettings(${index}, 'value', parseInt(this.value))" title="Chip value">
+                    <label>Name</label>
+                    <input type="text" value="${chip.name}" onchange="updateChipFromSettings(${index}, 'name', this.value)" title="Chip name">
+                    <button class="chip-remove-btn" onclick="removeChip(${index})" title="Remove chip">×</button>
+                </div>
+            `).join('');
+        }
+
+        function updateChipFromSettings(index, field, value) {
+            chips[index][field] = value;
+            if (field === 'active') {
+                renderChipSettings();
+            }
+            updateChipLegend();
+            saveSettings();
+        }
+
+        function addChip() {
+            const colors = ['#ffffff', '#3498db', '#e74c3c', '#2ecc71', '#000000', '#f39c12', '#9b59b6', '#1abc9c'];
+            const lastValue = chips.length > 0 ? chips[chips.length - 1].value : 0;
+            chips.push({
+                value: lastValue * 2 || 100,
+                color: colors[chips.length % colors.length],
+                name: 'Custom',
+                active: true
+            });
+            renderChipSettings();
+            updateChipLegend();
+            saveSettings();
+        }
+
+        function removeChip(index) {
+            if (chips.length <= 1) return;
+            chips.splice(index, 1);
+            renderChipSettings();
+            updateChipLegend();
+            saveSettings();
+        }
+
+        function resetChipsToDefault() {
+            chips = defaultChips.map(chip => ({...chip}));
+            renderChipSettings();
+            updateChipLegend();
+            saveSettings();
         }
 
         // ===============================
@@ -2592,6 +2746,7 @@
                 playersRemaining,
                 rebuys,
                 theme: currentTheme,
+                chips: chips,
                 settings: getSettings()
             }));
         }
@@ -2624,6 +2779,11 @@
                     // Load theme
                     if (state.theme) {
                         setTheme(state.theme);
+                    }
+
+                    // Load chips
+                    if (state.chips && state.chips.length > 0) {
+                        chips = state.chips;
                     }
                 } catch (e) {
                     console.log('Could not restore saved state');
@@ -2712,6 +2872,7 @@
         // ===============================
         loadState();
         updateDisplay();
+        renderChipSettings();
         renderSavedTournaments();
     </script>
 </body>
