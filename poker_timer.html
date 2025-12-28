@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Tournament Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 15px 0;
+            border-bottom: 2px solid #c9a227;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: #c9a227;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 3px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: rgba(201, 162, 39, 0.2);
+            border: 1px solid #c9a227;
+            color: #c9a227;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .icon-btn:hover {
+            background: rgba(201, 162, 39, 0.4);
+        }
+
+        .icon-btn.active {
+            background: #c9a227;
+            color: #1a1a2e;
+        }
+
+        .icon-btn.muted {
+            background: rgba(231, 76, 60, 0.2);
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        /* Main Display */
+        .main-display {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-display {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .timer-display {
+            background: linear-gradient(145deg, #0d1b2a, #1b2838);
+            border: 3px solid #2d5a3d;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 60px rgba(45, 90, 61, 0.1);
+        }
+
+        .timer-display.presentation-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 3000;
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 50px;
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .level-number {
+            font-size: 1.3rem;
+            color: #c9a227;
+        }
+
+        .level-number span {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .status-badges {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .badge.active {
+            display: inline-block;
+        }
+
+        .break-badge {
+            background: #c9a227;
+            color: #1a1a2e;
+            animation: pulse 1.5s infinite;
+        }
+
+        .rebuy-badge {
+            background: #3498db;
+            color: #fff;
+        }
+
+        .hand-for-hand-badge {
+            background: #e74c3c;
+            color: #fff;
+            animation: pulse 1s infinite;
+        }
+
+        .bubble-badge {
+            background: #9b59b6;
+            color: #fff;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .blinds-display {
+            margin: 20px 0;
+        }
+
+        .blinds-display h2 {
+            font-size: 3.5rem;
+            color: #4ecca3;
+            text-shadow: 0 0 20px rgba(78, 204, 163, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .presentation-mode .blinds-display h2 {
+            font-size: 6rem;
+        }
+
+        .blinds-label {
+            font-size: 1rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .ante-display {
+            font-size: 1.5rem;
+            color: #c9a227;
+            margin-top: 10px;
+        }
+
+        .presentation-mode .ante-display {
+            font-size: 2.5rem;
+        }
+
+        .countdown {
+            font-size: 6rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(255,255,255,0.3);
+            margin: 20px 0;
+            letter-spacing: 5px;
+        }
+
+        .presentation-mode .countdown {
+            font-size: 12rem;
+        }
+
+        .countdown.warning {
+            color: #f39c12;
+            animation: blink 1s infinite;
+        }
+
+        .countdown.danger {
+            color: #e74c3c;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .next-level {
+            background: rgba(201, 162, 39, 0.1);
+            border: 1px solid #c9a227;
+            border-radius: 10px;
+            padding: 12px 25px;
+            display: inline-block;
+        }
+
+        .next-level span {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .next-level strong {
+            color: #c9a227;
+            font-size: 1.2rem;
+            margin-left: 10px;
+        }
+
+        .presentation-mode .next-level {
+            font-size: 1.5rem;
+            padding: 20px 40px;
+        }
+
+        .presentation-mode .next-level strong {
+            font-size: 2rem;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, #4ecca3, #2d8a6e);
+            color: #1a1a2e;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(78, 204, 163, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(145deg, #c9a227, #a68520);
+            color: #1a1a2e;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(201, 162, 39, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn-nav {
+            background: linear-gradient(145deg, #34495e, #2c3e50);
+            color: #fff;
+            padding: 10px 20px;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.85rem;
+        }
+
+        /* Side Panel */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-card {
+            background: linear-gradient(145deg, #0d1b2a, #1b2838);
+            border: 2px solid #2d5a3d;
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .panel-card h4 {
+            color: #c9a227;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #2d5a3d;
+            padding-bottom: 8px;
+        }
+
+        /* Tournament Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 8px;
+            background: rgba(45, 90, 61, 0.2);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            color: #4ecca3;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        /* Prize Pool */
+        .prize-list {
+            font-size: 0.85rem;
+        }
+
+        .prize-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(45, 90, 61, 0.3);
+        }
+
+        .prize-item:last-child {
+            border-bottom: none;
+        }
+
+        .prize-place {
+            color: #c9a227;
+        }
+
+        .prize-amount {
+            color: #4ecca3;
+        }
+
+        /* Chip Colors */
+        .chip-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+        }
+
+        .chip-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255,255,255,0.5);
+        }
+
+        /* Player Controls */
+        .player-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .player-btn {
+            background: #2d5a3d;
+            border: none;
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .player-count {
+            font-size: 2rem;
+            color: #4ecca3;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* Tables */
+        .tables-info {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .table-stat {
+            padding: 5px;
+        }
+
+        .table-stat .value {
+            font-size: 1.2rem;
+            color: #4ecca3;
+        }
+
+        .table-stat .label {
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        /* Time Controls */
+        .time-adjust {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .time-btn {
+            padding: 5px 10px;
+            background: rgba(45, 90, 61, 0.3);
+            border: 1px solid #2d5a3d;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .time-btn:hover {
+            background: rgba(45, 90, 61, 0.6);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #2d5a3d;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            color: #888;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #fff;
+        }
+
+        .tab.active {
+            color: #c9a227;
+            border-bottom-color: #c9a227;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Structure Table */
+        .structure-panel {
+            background: linear-gradient(145deg, #0d1b2a, #1b2838);
+            border: 2px solid #2d5a3d;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .structure-panel h3 {
+            color: #c9a227;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .structure-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .structure-table th,
+        .structure-table td {
+            padding: 10px 12px;
+            text-align: center;
+            border-bottom: 1px solid #2d5a3d;
+        }
+
+        .structure-table th {
+            background: rgba(45, 90, 61, 0.3);
+            color: #c9a227;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .structure-table tr:hover {
+            background: rgba(78, 204, 163, 0.1);
+        }
+
+        .structure-table tr.current-level {
+            background: rgba(78, 204, 163, 0.2);
+            border-left: 3px solid #4ecca3;
+        }
+
+        .structure-table tr.break-row {
+            background: rgba(201, 162, 39, 0.1);
+            color: #c9a227;
+            font-style: italic;
+        }
+
+        .structure-table input {
+            width: 70px;
+            padding: 6px;
+            border: 1px solid #2d5a3d;
+            border-radius: 5px;
+            background: #1a1a2e;
+            color: #fff;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .structure-table input:focus {
+            outline: none;
+            border-color: #4ecca3;
+        }
+
+        .add-level-btn {
+            background: transparent;
+            border: 2px dashed #4ecca3;
+            color: #4ecca3;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 3px;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .add-level-btn:hover {
+            background: rgba(78, 204, 163, 0.1);
+        }
+
+        .remove-btn {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        /* Settings */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .setting-item label {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .setting-item input[type="number"],
+        .setting-item input[type="text"],
+        .setting-item select {
+            padding: 8px;
+            border: 1px solid #2d5a3d;
+            border-radius: 5px;
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .setting-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        .checkbox-item {
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Presets */
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .preset-btn {
+            padding: 8px 15px;
+            background: rgba(201, 162, 39, 0.2);
+            border: 1px solid #c9a227;
+            color: #c9a227;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: #c9a227;
+            color: #1a1a2e;
+        }
+
+        /* Announcements */
+        .announcement {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            padding: 50px 80px;
+            border-radius: 20px;
+            border: 3px solid #c9a227;
+            text-align: center;
+            z-index: 4000;
+            display: none;
+        }
+
+        .announcement.active {
+            display: block;
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .announcement h2 {
+            font-size: 3rem;
+            color: #c9a227;
+            margin-bottom: 20px;
+        }
+
+        .announcement p {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 30px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 5000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 2px solid #c9a227;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            color: #c9a227;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* Keyboard shortcuts */
+        .shortcuts-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+            font-size: 0.8rem;
+        }
+
+        .shortcut {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .key {
+            background: #2d5a3d;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .countdown {
+                font-size: 4rem;
+            }
+
+            .blinds-display h2 {
+                font-size: 2.5rem;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+
+            .level-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2d5a3d;
+            border-radius: 4px;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+            }
+
+            .timer-display, .panel-card, .structure-panel {
+                background: #fff;
+                border-color: #000;
+            }
+
+            .controls, .header-controls, .icon-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>♠ POKER TIMER ♠</h1>
+            <div class="header-controls">
+                <button class="icon-btn" id="soundToggle" title="Toggle Sound (M)">🔊</button>
+                <button class="icon-btn" id="presentationBtn" title="Presentation Mode (P)">📺</button>
+                <button class="icon-btn" id="fullscreenBtn" title="Fullscreen (F)">⛶</button>
+                <button class="icon-btn" id="settingsBtn" title="Settings">⚙️</button>
+                <button class="icon-btn" id="helpBtn" title="Keyboard Shortcuts">❓</button>
+            </div>
+        </header>
+
+        <div class="main-display">
+            <div class="timer-display" id="timerDisplay">
+                <div class="level-info">
+                    <div class="level-number">Level <span id="currentLevel">1</span></div>
+                    <div class="status-badges">
+                        <span class="badge break-badge" id="breakBadge">BREAK</span>
+                        <span class="badge rebuy-badge" id="rebuyBadge">REBUY OPEN</span>
+                        <span class="badge hand-for-hand-badge" id="hfhBadge">HAND FOR HAND</span>
+                        <span class="badge bubble-badge" id="bubbleBadge">BUBBLE</span>
+                    </div>
+                </div>
+
+                <div class="blinds-display">
+                    <div class="blinds-label">Blinds</div>
+                    <h2 id="blindsText">25 / 50</h2>
+                    <div class="ante-display" id="anteText"></div>
+                </div>
+
+                <div class="countdown" id="countdown">20:00</div>
+
+                <div class="next-level" id="nextLevelInfo">
+                    <span>Next:</span>
+                    <strong id="nextBlinds">50 / 100</strong>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-nav" onclick="previousLevel()">◀ Prev</button>
+                    <button class="btn btn-primary" id="playPauseBtn" onclick="toggleTimer()">START</button>
+                    <button class="btn btn-secondary" onclick="resetLevel()">Reset</button>
+                    <button class="btn btn-nav" onclick="nextLevel()">Next ▶</button>
+                </div>
+
+                <div class="time-adjust">
+                    <button class="time-btn" onclick="adjustTime(-60)">-1 min</button>
+                    <button class="time-btn" onclick="adjustTime(-10)">-10s</button>
+                    <button class="time-btn" onclick="adjustTime(10)">+10s</button>
+                    <button class="time-btn" onclick="adjustTime(60)">+1 min</button>
+                    <button class="time-btn" onclick="adjustTime(300)">+5 min</button>
+                </div>
+
+                <button class="btn btn-small btn-nav" style="margin-top: 15px;" onclick="exitPresentation()" id="exitPresentationBtn" hidden>Exit Presentation</button>
+            </div>
+
+            <div class="side-panel" id="sidePanel">
+                <!-- Tournament Info -->
+                <div class="panel-card">
+                    <h4>Tournament Info</h4>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalTime">00:00:00</div>
+                            <div class="stat-label">Elapsed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avgStack">--</div>
+                            <div class="stat-label">Avg Stack (BB)</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="mRatio">--</div>
+                            <div class="stat-label">M-Ratio</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="levelsRemaining">--</div>
+                            <div class="stat-label">Levels Left</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Players -->
+                <div class="panel-card">
+                    <h4>Players Remaining</h4>
+                    <div class="player-controls">
+                        <button class="player-btn" onclick="adjustPlayers(-1)">−</button>
+                        <div class="player-count" id="playersRemaining">9</div>
+                        <button class="player-btn" onclick="adjustPlayers(1)">+</button>
+                    </div>
+                    <div class="tables-info">
+                        <div class="table-stat">
+                            <div class="value" id="tablesCount">1</div>
+                            <div class="label">Tables</div>
+                        </div>
+                        <div class="table-stat">
+                            <div class="value" id="playersPerTable">9</div>
+                            <div class="label">Per Table</div>
+                        </div>
+                        <div class="table-stat">
+                            <div class="value" id="totalChips">90,000</div>
+                            <div class="label">Total Chips</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prize Pool -->
+                <div class="panel-card">
+                    <h4>Prize Pool</h4>
+                    <div class="stat-item" style="margin-bottom: 10px;">
+                        <div class="stat-value" id="prizePool">$0</div>
+                    </div>
+                    <div class="prize-list" id="prizeList">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Chip Colors -->
+                <div class="panel-card">
+                    <h4>Chip Values</h4>
+                    <div class="chip-legend" id="chipLegend">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="panel-card">
+                    <h4>Quick Actions</h4>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button class="btn btn-small btn-secondary" onclick="toggleRebuy()">Toggle Rebuy Period</button>
+                        <button class="btn btn-small btn-danger" onclick="toggleHandForHand()">Toggle Hand-for-Hand</button>
+                        <button class="btn btn-small btn-nav" onclick="toggleBubble()">Toggle Bubble</button>
+                        <button class="btn btn-small btn-nav" onclick="randomSeat()">Random Seat Draw</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Structure Panel with Tabs -->
+        <div class="structure-panel">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('structure')">Blind Structure</div>
+                <div class="tab" onclick="switchTab('settings')">Settings</div>
+                <div class="tab" onclick="switchTab('presets')">Presets</div>
+            </div>
+
+            <!-- Structure Tab -->
+            <div class="tab-content active" id="structureTab">
+                <table class="structure-table" id="structureTable">
+                    <thead>
+                        <tr>
+                            <th>Level</th>
+                            <th>Small Blind</th>
+                            <th>Big Blind</th>
+                            <th>Ante</th>
+                            <th>Duration</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="structureBody">
+                    </tbody>
+                </table>
+
+                <div style="text-align: center;">
+                    <button class="add-level-btn" onclick="addLevel()">+ Add Level</button>
+                    <button class="add-level-btn" onclick="addBreak()">+ Add Break</button>
+                    <button class="add-level-btn" onclick="exportStructure()">📤 Export</button>
+                    <button class="add-level-btn" onclick="importStructure()">📥 Import</button>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settingsTab">
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label>Tournament Name</label>
+                        <input type="text" id="tournamentName" value="Home Game" onchange="saveSettings()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Default Level Duration (min)</label>
+                        <input type="number" id="levelDuration" value="20" min="1" max="120" onchange="updateLevelDuration()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Starting Chips</label>
+                        <input type="number" id="startingChips" value="10000" min="100" step="100" onchange="updateStats()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Starting Players</label>
+                        <input type="number" id="playerCount" value="9" min="2" max="1000" onchange="updateStats()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Buy-in Amount ($)</label>
+                        <input type="number" id="buyIn" value="50" min="0" onchange="updatePrizePool()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Rebuy Amount ($)</label>
+                        <input type="number" id="rebuyAmount" value="50" min="0" onchange="updatePrizePool()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Players Per Table</label>
+                        <input type="number" id="seatsPerTable" value="9" min="2" max="10" onchange="updateStats()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Rebuy End Level</label>
+                        <input type="number" id="rebuyEndLevel" value="6" min="1" onchange="saveSettings()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Warning Time (sec)</label>
+                        <input type="number" id="warningTime" value="60" min="10" max="300" onchange="saveSettings()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Danger Time (sec)</label>
+                        <input type="number" id="dangerTime" value="10" min="5" max="60" onchange="saveSettings()">
+                    </div>
+                    <div class="setting-item checkbox-item">
+                        <input type="checkbox" id="announceLevels" checked onchange="saveSettings()">
+                        <label>Announce Level Changes</label>
+                    </div>
+                    <div class="setting-item checkbox-item">
+                        <input type="checkbox" id="announceBreaks" checked onchange="saveSettings()">
+                        <label>Announce Breaks</label>
+                    </div>
+                    <div class="setting-item checkbox-item">
+                        <input type="checkbox" id="playCountdown" checked onchange="saveSettings()">
+                        <label>Play Countdown Beeps</label>
+                    </div>
+                    <div class="setting-item checkbox-item">
+                        <input type="checkbox" id="autoAdvance" checked onchange="saveSettings()">
+                        <label>Auto-Advance Levels</label>
+                    </div>
+                </div>
+
+                <h4 style="color: #c9a227; margin: 20px 0 10px;">Chip Colors</h4>
+                <div class="settings-grid" id="chipSettings">
+                    <!-- Generated dynamically -->
+                </div>
+
+                <h4 style="color: #c9a227; margin: 20px 0 10px;">Payout Structure</h4>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label>1st Place %</label>
+                        <input type="number" id="payout1" value="50" min="0" max="100" onchange="updatePrizePool()">
+                    </div>
+                    <div class="setting-item">
+                        <label>2nd Place %</label>
+                        <input type="number" id="payout2" value="30" min="0" max="100" onchange="updatePrizePool()">
+                    </div>
+                    <div class="setting-item">
+                        <label>3rd Place %</label>
+                        <input type="number" id="payout3" value="20" min="0" max="100" onchange="updatePrizePool()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Presets Tab -->
+            <div class="tab-content" id="presetsTab">
+                <h4 style="color: #c9a227; margin-bottom: 15px;">Load Tournament Preset</h4>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="loadPreset('turbo')">🚀 Turbo (10 min levels)</button>
+                    <button class="preset-btn" onclick="loadPreset('standard')">🎯 Standard (20 min levels)</button>
+                    <button class="preset-btn" onclick="loadPreset('deepstack')">💰 Deep Stack (30 min levels)</button>
+                    <button class="preset-btn" onclick="loadPreset('superTurbo')">⚡ Super Turbo (5 min)</button>
+                    <button class="preset-btn" onclick="loadPreset('shootout')">🎯 Shootout</button>
+                    <button class="preset-btn" onclick="loadPreset('bounty')">🏴‍☠️ Bounty</button>
+                </div>
+
+                <h4 style="color: #c9a227; margin: 20px 0 15px;">Saved Tournaments</h4>
+                <div id="savedTournaments">
+                    <!-- Generated dynamically -->
+                </div>
+                <button class="btn btn-secondary btn-small" style="margin-top: 15px;" onclick="saveTournament()">💾 Save Current Tournament</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Announcement Overlay -->
+    <div class="announcement" id="announcement">
+        <h2 id="announcementTitle">Level Up!</h2>
+        <p id="announcementText">New blinds: 50 / 100</p>
+        <button class="btn btn-primary" onclick="closeAnnouncement()">Continue</button>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="randomSeatModal">
+        <div class="modal">
+            <h2>🎲 Random Seat Assignment</h2>
+            <p style="font-size: 3rem; color: #4ecca3; margin: 30px 0;" id="randomSeatResult">--</p>
+            <p>Table <span id="randomTable">1</span>, Seat <span id="randomSeat">1</span></p>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="randomSeat()">Draw Again</button>
+                <button class="btn btn-nav" onclick="closeModal('randomSeatModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal">
+            <h2>⌨️ Keyboard Shortcuts</h2>
+            <div class="shortcuts-list">
+                <div class="shortcut"><span class="key">Space</span> Play/Pause</div>
+                <div class="shortcut"><span class="key">←</span> Previous Level</div>
+                <div class="shortcut"><span class="key">→</span> Next Level</div>
+                <div class="shortcut"><span class="key">R</span> Reset Level</div>
+                <div class="shortcut"><span class="key">F</span> Fullscreen</div>
+                <div class="shortcut"><span class="key">P</span> Presentation</div>
+                <div class="shortcut"><span class="key">M</span> Mute/Unmute</div>
+                <div class="shortcut"><span class="key">+</span> Add 1 minute</div>
+                <div class="shortcut"><span class="key">-</span> Remove 1 minute</div>
+                <div class="shortcut"><span class="key">H</span> Hand-for-Hand</div>
+                <div class="shortcut"><span class="key">B</span> Toggle Bubble</div>
+                <div class="shortcut"><span class="key">1-9</span> Jump to Level</div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-nav" onclick="closeModal('helpModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal">
+            <h2>📥 Import Structure</h2>
+            <textarea id="importData" style="width: 100%; height: 200px; background: #1a1a2e; color: #fff; border: 1px solid #2d5a3d; border-radius: 5px; padding: 10px; font-family: monospace;" placeholder="Paste JSON structure here..."></textarea>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="doImport()">Import</button>
+                <button class="btn btn-nav" onclick="closeModal('importModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===============================
+        // CONFIGURATION
+        // ===============================
+        const defaultChips = [
+            { value: 25, color: '#2ecc71', name: 'Green' },
+            { value: 100, color: '#000', name: 'Black' },
+            { value: 500, color: '#9b59b6', name: 'Purple' },
+            { value: 1000, color: '#f39c12', name: 'Yellow' },
+            { value: 5000, color: '#e74c3c', name: 'Red' },
+            { value: 25000, color: '#3498db', name: 'Blue' }
+        ];
+
+        // ===============================
+        // STATE
+        // ===============================
+        let structure = [];
+        let currentLevelIndex = 0;
+        let timeRemaining = 20 * 60;
+        let levelDuration = 20 * 60;
+        let isRunning = false;
+        let timerInterval = null;
+        let totalSeconds = 0;
+        let totalTimeInterval = null;
+        let soundEnabled = true;
+        let playersRemaining = 9;
+        let rebuys = 0;
+        let rebuyOpen = false;
+        let handForHand = false;
+        let bubbleMode = false;
+        let presentationMode = false;
+        let chips = [...defaultChips];
+        let audioContext = null;
+
+        // ===============================
+        // PRESETS
+        // ===============================
+        const presets = {
+            turbo: {
+                name: 'Turbo',
+                duration: 10,
+                structure: [
+                    { sb: 25, bb: 50, ante: 0 },
+                    { sb: 50, bb: 100, ante: 0 },
+                    { sb: 75, bb: 150, ante: 0 },
+                    { sb: 100, bb: 200, ante: 25 },
+                    { sb: 150, bb: 300, ante: 25 },
+                    { isBreak: true, breakDuration: 5 },
+                    { sb: 200, bb: 400, ante: 50 },
+                    { sb: 300, bb: 600, ante: 75 },
+                    { sb: 400, bb: 800, ante: 100 },
+                    { sb: 500, bb: 1000, ante: 100 },
+                    { isBreak: true, breakDuration: 5 },
+                    { sb: 600, bb: 1200, ante: 150 },
+                    { sb: 800, bb: 1600, ante: 200 },
+                    { sb: 1000, bb: 2000, ante: 300 },
+                    { sb: 1500, bb: 3000, ante: 400 },
+                    { sb: 2000, bb: 4000, ante: 500 }
+                ]
+            },
+            standard: {
+                name: 'Standard',
+                duration: 20,
+                structure: [
+                    { sb: 25, bb: 50, ante: 0 },
+                    { sb: 50, bb: 100, ante: 0 },
+                    { sb: 75, bb: 150, ante: 0 },
+                    { sb: 100, bb: 200, ante: 25 },
+                    { sb: 150, bb: 300, ante: 25 },
+                    { isBreak: true, breakDuration: 10 },
+                    { sb: 200, bb: 400, ante: 50 },
+                    { sb: 300, bb: 600, ante: 75 },
+                    { sb: 400, bb: 800, ante: 100 },
+                    { sb: 500, bb: 1000, ante: 100 },
+                    { sb: 600, bb: 1200, ante: 150 },
+                    { isBreak: true, breakDuration: 15 },
+                    { sb: 800, bb: 1600, ante: 200 },
+                    { sb: 1000, bb: 2000, ante: 300 },
+                    { sb: 1500, bb: 3000, ante: 400 },
+                    { sb: 2000, bb: 4000, ante: 500 },
+                    { sb: 3000, bb: 6000, ante: 750 }
+                ]
+            },
+            deepstack: {
+                name: 'Deep Stack',
+                duration: 30,
+                structure: [
+                    { sb: 25, bb: 50, ante: 0 },
+                    { sb: 50, bb: 100, ante: 0 },
+                    { sb: 75, bb: 150, ante: 0 },
+                    { sb: 100, bb: 200, ante: 0 },
+                    { sb: 100, bb: 200, ante: 25 },
+                    { isBreak: true, breakDuration: 15 },
+                    { sb: 150, bb: 300, ante: 25 },
+                    { sb: 200, bb: 400, ante: 50 },
+                    { sb: 250, bb: 500, ante: 50 },
+                    { sb: 300, bb: 600, ante: 75 },
+                    { isBreak: true, breakDuration: 15 },
+                    { sb: 400, bb: 800, ante: 100 },
+                    { sb: 500, bb: 1000, ante: 100 },
+                    { sb: 600, bb: 1200, ante: 150 },
+                    { sb: 800, bb: 1600, ante: 200 },
+                    { isBreak: true, breakDuration: 20 },
+                    { sb: 1000, bb: 2000, ante: 300 },
+                    { sb: 1500, bb: 3000, ante: 400 },
+                    { sb: 2000, bb: 4000, ante: 500 },
+                    { sb: 3000, bb: 6000, ante: 750 }
+                ]
+            },
+            superTurbo: {
+                name: 'Super Turbo',
+                duration: 5,
+                structure: [
+                    { sb: 50, bb: 100, ante: 0 },
+                    { sb: 100, bb: 200, ante: 25 },
+                    { sb: 150, bb: 300, ante: 25 },
+                    { sb: 200, bb: 400, ante: 50 },
+                    { sb: 300, bb: 600, ante: 75 },
+                    { sb: 400, bb: 800, ante: 100 },
+                    { sb: 500, bb: 1000, ante: 100 },
+                    { sb: 600, bb: 1200, ante: 150 },
+                    { sb: 800, bb: 1600, ante: 200 },
+                    { sb: 1000, bb: 2000, ante: 300 }
+                ]
+            },
+            shootout: {
+                name: 'Shootout',
+                duration: 15,
+                structure: [
+                    { sb: 25, bb: 50, ante: 0 },
+                    { sb: 50, bb: 100, ante: 0 },
+                    { sb: 100, bb: 200, ante: 0 },
+                    { sb: 150, bb: 300, ante: 0 },
+                    { sb: 200, bb: 400, ante: 0 },
+                    { sb: 300, bb: 600, ante: 0 },
+                    { sb: 400, bb: 800, ante: 0 },
+                    { sb: 500, bb: 1000, ante: 0 },
+                    { sb: 600, bb: 1200, ante: 0 },
+                    { sb: 800, bb: 1600, ante: 0 }
+                ]
+            },
+            bounty: {
+                name: 'Bounty',
+                duration: 15,
+                structure: [
+                    { sb: 25, bb: 50, ante: 0 },
+                    { sb: 50, bb: 100, ante: 0 },
+                    { sb: 75, bb: 150, ante: 0 },
+                    { sb: 100, bb: 200, ante: 25 },
+                    { isBreak: true, breakDuration: 10 },
+                    { sb: 150, bb: 300, ante: 50 },
+                    { sb: 200, bb: 400, ante: 50 },
+                    { sb: 300, bb: 600, ante: 75 },
+                    { sb: 400, bb: 800, ante: 100 },
+                    { isBreak: true, breakDuration: 10 },
+                    { sb: 500, bb: 1000, ante: 100 },
+                    { sb: 600, bb: 1200, ante: 150 },
+                    { sb: 800, bb: 1600, ante: 200 },
+                    { sb: 1000, bb: 2000, ante: 300 }
+                ]
+            }
+        };
+
+        // ===============================
+        // AUDIO
+        // ===============================
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeep(frequency = 800, duration = 200, type = 'sine') {
+            if (!soundEnabled) return;
+            initAudio();
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+        }
+
+        function playLevelChangeSound() {
+            if (!soundEnabled) return;
+            playBeep(600, 150);
+            setTimeout(() => playBeep(800, 150), 200);
+            setTimeout(() => playBeep(1000, 300), 400);
+        }
+
+        function playBreakSound() {
+            if (!soundEnabled) return;
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => playBeep(500, 200), i * 250);
+            }
+        }
+
+        function playWarningSound() {
+            if (!soundEnabled) return;
+            playBeep(400, 150);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggle');
+            btn.textContent = soundEnabled ? '🔊' : '🔇';
+            btn.classList.toggle('muted', !soundEnabled);
+            if (soundEnabled) {
+                initAudio();
+                playBeep(800, 100);
+            }
+        }
+
+        // ===============================
+        // TIME FORMATTING
+        // ===============================
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function formatTotalTime(seconds) {
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // ===============================
+        // DISPLAY UPDATES
+        // ===============================
+        function updateDisplay() {
+            const current = structure[currentLevelIndex];
+            const countdown = document.getElementById('countdown');
+
+            countdown.textContent = formatTime(timeRemaining);
+
+            // Update warning states
+            const warningTime = parseInt(document.getElementById('warningTime')?.value) || 60;
+            const dangerTime = parseInt(document.getElementById('dangerTime')?.value) || 10;
+
+            countdown.classList.remove('warning', 'danger');
+            if (timeRemaining <= dangerTime) {
+                countdown.classList.add('danger');
+            } else if (timeRemaining <= warningTime) {
+                countdown.classList.add('warning');
+            }
+
+            // Update level and blinds display
+            if (current.isBreak) {
+                document.getElementById('currentLevel').textContent = 'BREAK';
+                document.getElementById('blindsText').textContent = 'Take a Break!';
+                document.getElementById('anteText').textContent = '';
+                document.getElementById('breakBadge').classList.add('active');
+            } else {
+                document.getElementById('currentLevel').textContent = current.level;
+                document.getElementById('blindsText').textContent = `${current.sb.toLocaleString()} / ${current.bb.toLocaleString()}`;
+                document.getElementById('anteText').textContent = current.ante > 0 ? `Ante: ${current.ante.toLocaleString()}` : '';
+                document.getElementById('breakBadge').classList.remove('active');
+            }
+
+            // Update rebuy badge
+            const rebuyEndLevel = parseInt(document.getElementById('rebuyEndLevel')?.value) || 6;
+            const currentPlayLevel = structure.filter((s, i) => i <= currentLevelIndex && !s.isBreak).length;
+            rebuyOpen = currentPlayLevel <= rebuyEndLevel;
+            document.getElementById('rebuyBadge').classList.toggle('active', rebuyOpen);
+
+            // Update next level info
+            if (currentLevelIndex < structure.length - 1) {
+                const next = structure[currentLevelIndex + 1];
+                if (next.isBreak) {
+                    document.getElementById('nextBlinds').textContent = `BREAK (${next.breakDuration || 10} min)`;
+                } else {
+                    document.getElementById('nextBlinds').textContent = `${next.sb.toLocaleString()} / ${next.bb.toLocaleString()}`;
+                }
+                document.getElementById('nextLevelInfo').style.display = 'inline-block';
+            } else {
+                document.getElementById('nextLevelInfo').style.display = 'none';
+            }
+
+            // Update levels remaining
+            const levelsLeft = structure.length - currentLevelIndex - 1;
+            document.getElementById('levelsRemaining').textContent = levelsLeft;
+
+            updateStats();
+            renderStructure();
+        }
+
+        function updateStats() {
+            document.getElementById('totalTime').textContent = formatTotalTime(totalSeconds);
+
+            const startingChips = parseInt(document.getElementById('startingChips')?.value) || 10000;
+            const current = structure[currentLevelIndex];
+
+            // Update player/table info
+            document.getElementById('playersRemaining').textContent = playersRemaining;
+
+            const seatsPerTable = parseInt(document.getElementById('seatsPerTable')?.value) || 9;
+            const tables = Math.ceil(playersRemaining / seatsPerTable);
+            const perTable = playersRemaining > 0 ? Math.round(playersRemaining / tables * 10) / 10 : 0;
+
+            document.getElementById('tablesCount').textContent = tables;
+            document.getElementById('playersPerTable').textContent = perTable.toFixed(1);
+
+            const totalChips = startingChips * (parseInt(document.getElementById('playerCount')?.value) || 9) + (rebuys * startingChips);
+            document.getElementById('totalChips').textContent = totalChips.toLocaleString();
+
+            if (!current.isBreak && current.bb > 0) {
+                const avgStack = Math.round(totalChips / playersRemaining);
+                const avgBB = Math.round(avgStack / current.bb);
+                document.getElementById('avgStack').textContent = avgBB;
+
+                // M-Ratio calculation
+                const pot = current.sb + current.bb + (current.ante * seatsPerTable);
+                const mRatio = Math.round(avgStack / pot);
+                document.getElementById('mRatio').textContent = mRatio;
+            }
+
+            updatePrizePool();
+            updateChipLegend();
+        }
+
+        function updatePrizePool() {
+            const buyIn = parseFloat(document.getElementById('buyIn')?.value) || 0;
+            const rebuyAmount = parseFloat(document.getElementById('rebuyAmount')?.value) || 0;
+            const playerCount = parseInt(document.getElementById('playerCount')?.value) || 9;
+
+            const total = (buyIn * playerCount) + (rebuyAmount * rebuys);
+            document.getElementById('prizePool').textContent = `$${total.toLocaleString()}`;
+
+            // Update payouts
+            const payout1 = parseInt(document.getElementById('payout1')?.value) || 50;
+            const payout2 = parseInt(document.getElementById('payout2')?.value) || 30;
+            const payout3 = parseInt(document.getElementById('payout3')?.value) || 20;
+
+            const prizeList = document.getElementById('prizeList');
+            prizeList.innerHTML = `
+                <div class="prize-item"><span class="prize-place">1st</span><span class="prize-amount">$${Math.round(total * payout1 / 100).toLocaleString()}</span></div>
+                <div class="prize-item"><span class="prize-place">2nd</span><span class="prize-amount">$${Math.round(total * payout2 / 100).toLocaleString()}</span></div>
+                <div class="prize-item"><span class="prize-place">3rd</span><span class="prize-amount">$${Math.round(total * payout3 / 100).toLocaleString()}</span></div>
+            `;
+        }
+
+        function updateChipLegend() {
+            const legend = document.getElementById('chipLegend');
+            legend.innerHTML = chips.map(chip => `
+                <div class="chip">
+                    <div class="chip-color" style="background: ${chip.color}"></div>
+                    <span>${chip.value.toLocaleString()}</span>
+                </div>
+            `).join('');
+        }
+
+        // ===============================
+        // TIMER CONTROLS
+        // ===============================
+        function toggleTimer() {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+
+            initAudio();
+            isRunning = true;
+            document.getElementById('playPauseBtn').textContent = 'PAUSE';
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+
+                // Play warning sounds
+                const warningTime = parseInt(document.getElementById('warningTime')?.value) || 60;
+                const playCountdown = document.getElementById('playCountdown')?.checked !== false;
+
+                if (timeRemaining === warningTime || timeRemaining === 30) {
+                    playWarningSound();
+                }
+
+                // Countdown beeps
+                if (playCountdown && timeRemaining <= 5 && timeRemaining > 0) {
+                    playBeep(600, 100);
+                }
+
+                if (timeRemaining <= 0) {
+                    const autoAdvance = document.getElementById('autoAdvance')?.checked !== false;
+                    if (autoAdvance) {
+                        advanceLevel();
+                    } else {
+                        timeRemaining = 0;
+                        pauseTimer();
+                        showAnnouncement('Time!', 'Level time has ended. Click to advance.');
+                    }
+                }
+
+                updateDisplay();
+            }, 1000);
+
+            totalTimeInterval = setInterval(() => {
+                totalSeconds++;
+                document.getElementById('totalTime').textContent = formatTotalTime(totalSeconds);
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            isRunning = false;
+            document.getElementById('playPauseBtn').textContent = 'START';
+            clearInterval(timerInterval);
+            clearInterval(totalTimeInterval);
+        }
+
+        function resetLevel() {
+            const current = structure[currentLevelIndex];
+            if (current.isBreak) {
+                timeRemaining = (current.breakDuration || 10) * 60;
+            } else {
+                timeRemaining = current.duration ? current.duration * 60 : levelDuration;
+            }
+            updateDisplay();
+        }
+
+        function adjustTime(seconds) {
+            timeRemaining = Math.max(0, timeRemaining + seconds);
+            updateDisplay();
+        }
+
+        function advanceLevel() {
+            if (currentLevelIndex < structure.length - 1) {
+                currentLevelIndex++;
+                const current = structure[currentLevelIndex];
+
+                if (current.isBreak) {
+                    timeRemaining = (current.breakDuration || 10) * 60;
+                    if (document.getElementById('announceBreaks')?.checked !== false) {
+                        playBreakSound();
+                        showAnnouncement('Break Time!', `Take a ${current.breakDuration || 10} minute break`);
+                    }
+                } else {
+                    timeRemaining = current.duration ? current.duration * 60 : levelDuration;
+                    if (document.getElementById('announceLevels')?.checked !== false) {
+                        playLevelChangeSound();
+                        showAnnouncement('Level Up!', `Blinds: ${current.sb.toLocaleString()} / ${current.bb.toLocaleString()}${current.ante > 0 ? ` | Ante: ${current.ante.toLocaleString()}` : ''}`);
+                    }
+                }
+
+                updateDisplay();
+            } else {
+                pauseTimer();
+                showAnnouncement('Tournament Complete!', 'All levels have been played.');
+            }
+        }
+
+        function previousLevel() {
+            if (currentLevelIndex > 0) {
+                currentLevelIndex--;
+                resetLevel();
+            }
+        }
+
+        function nextLevel() {
+            if (currentLevelIndex < structure.length - 1) {
+                currentLevelIndex++;
+                resetLevel();
+            }
+        }
+
+        function jumpToLevel(levelNum) {
+            let count = 0;
+            for (let i = 0; i < structure.length; i++) {
+                if (!structure[i].isBreak) {
+                    count++;
+                    if (count === levelNum) {
+                        currentLevelIndex = i;
+                        resetLevel();
+                        return;
+                    }
+                }
+            }
+        }
+
+        // ===============================
+        // PLAYER MANAGEMENT
+        // ===============================
+        function adjustPlayers(delta) {
+            playersRemaining = Math.max(1, playersRemaining + delta);
+            updateStats();
+        }
+
+        // ===============================
+        // SPECIAL MODES
+        // ===============================
+        function toggleRebuy() {
+            rebuys++;
+            updateStats();
+            showAnnouncement('Rebuy!', `Total rebuys: ${rebuys}`);
+        }
+
+        function toggleHandForHand() {
+            handForHand = !handForHand;
+            document.getElementById('hfhBadge').classList.toggle('active', handForHand);
+            if (handForHand) {
+                showAnnouncement('Hand for Hand', 'Tournament is now hand-for-hand');
+            }
+        }
+
+        function toggleBubble() {
+            bubbleMode = !bubbleMode;
+            document.getElementById('bubbleBadge').classList.toggle('active', bubbleMode);
+        }
+
+        function randomSeat() {
+            const tables = Math.ceil(playersRemaining / (parseInt(document.getElementById('seatsPerTable')?.value) || 9));
+            const seats = parseInt(document.getElementById('seatsPerTable')?.value) || 9;
+
+            const table = Math.floor(Math.random() * tables) + 1;
+            const seat = Math.floor(Math.random() * seats) + 1;
+
+            document.getElementById('randomTable').textContent = table;
+            document.getElementById('randomSeat').textContent = seat;
+            document.getElementById('randomSeatResult').textContent = `Table ${table}, Seat ${seat}`;
+            document.getElementById('randomSeatModal').classList.add('active');
+        }
+
+        // ===============================
+        // PRESENTATION MODE
+        // ===============================
+        function togglePresentation() {
+            presentationMode = !presentationMode;
+            const timerDisplay = document.getElementById('timerDisplay');
+            const sidePanel = document.getElementById('sidePanel');
+            const exitBtn = document.getElementById('exitPresentationBtn');
+
+            timerDisplay.classList.toggle('presentation-mode', presentationMode);
+            sidePanel.hidden = presentationMode;
+            exitBtn.hidden = !presentationMode;
+
+            document.getElementById('presentationBtn').classList.toggle('active', presentationMode);
+        }
+
+        function exitPresentation() {
+            presentationMode = false;
+            document.getElementById('timerDisplay').classList.remove('presentation-mode');
+            document.getElementById('sidePanel').hidden = false;
+            document.getElementById('exitPresentationBtn').hidden = true;
+            document.getElementById('presentationBtn').classList.remove('active');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // ===============================
+        // STRUCTURE MANAGEMENT
+        // ===============================
+        function updateLevelDuration() {
+            const mins = parseInt(document.getElementById('levelDuration').value) || 20;
+            levelDuration = mins * 60;
+            if (!isRunning && structure[currentLevelIndex] && !structure[currentLevelIndex].isBreak) {
+                if (!structure[currentLevelIndex].duration) {
+                    timeRemaining = levelDuration;
+                    updateDisplay();
+                }
+            }
+        }
+
+        function renderStructure() {
+            const tbody = document.getElementById('structureBody');
+            tbody.innerHTML = '';
+
+            let levelNum = 0;
+            structure.forEach((item, index) => {
+                const row = document.createElement('tr');
+
+                if (item.isBreak) {
+                    row.className = 'break-row';
+                    if (index === currentLevelIndex) row.classList.add('current-level');
+                    row.innerHTML = `
+                        <td colspan="4" style="cursor: pointer;" onclick="currentLevelIndex=${index}; resetLevel();">BREAK</td>
+                        <td><input type="number" value="${item.breakDuration || 10}" min="1" style="width: 60px;" onchange="updateStructureField(${index}, 'breakDuration', this.value)"> min</td>
+                        <td><button class="remove-btn" onclick="removeLevel(${index})">✕</button></td>
+                    `;
+                } else {
+                    levelNum++;
+                    if (index === currentLevelIndex) row.classList.add('current-level');
+                    row.innerHTML = `
+                        <td style="cursor: pointer;" onclick="currentLevelIndex=${index}; resetLevel();">${levelNum}</td>
+                        <td><input type="number" value="${item.sb}" onchange="updateStructureField(${index}, 'sb', this.value)"></td>
+                        <td><input type="number" value="${item.bb}" onchange="updateStructureField(${index}, 'bb', this.value)"></td>
+                        <td><input type="number" value="${item.ante}" onchange="updateStructureField(${index}, 'ante', this.value)"></td>
+                        <td><input type="number" value="${item.duration || levelDuration / 60}" min="1" style="width: 60px;" onchange="updateStructureField(${index}, 'duration', this.value)"> min</td>
+                        <td><button class="remove-btn" onclick="removeLevel(${index})">✕</button></td>
+                    `;
+                }
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateStructureField(index, field, value) {
+            structure[index][field] = parseInt(value) || 0;
+            if (index === currentLevelIndex) {
+                if (field === 'duration' || field === 'breakDuration') {
+                    resetLevel();
+                }
+                updateDisplay();
+            }
+            renumberLevels();
+            saveState();
+        }
+
+        function addLevel() {
+            const lastLevel = structure.filter(s => !s.isBreak).pop();
+            const newSb = lastLevel ? lastLevel.bb : 25;
+            const newBb = newSb * 2;
+            const newAnte = lastLevel && lastLevel.ante > 0 ? Math.round(newBb * 0.125) : 0;
+
+            structure.push({
+                level: 0,
+                sb: newSb,
+                bb: newBb,
+                ante: newAnte,
+                isBreak: false,
+                duration: levelDuration / 60
+            });
+
+            renumberLevels();
+            renderStructure();
+            saveState();
+        }
+
+        function addBreak() {
+            structure.push({
+                level: 0,
+                sb: 0,
+                bb: 0,
+                ante: 0,
+                isBreak: true,
+                breakDuration: 10
+            });
+            renderStructure();
+            saveState();
+        }
+
+        function removeLevel(index) {
+            if (structure.length > 1) {
+                if (index < currentLevelIndex) {
+                    currentLevelIndex--;
+                } else if (index === currentLevelIndex && currentLevelIndex >= structure.length - 1) {
+                    currentLevelIndex = structure.length - 2;
+                }
+                structure.splice(index, 1);
+                renumberLevels();
+                updateDisplay();
+                saveState();
+            }
+        }
+
+        function renumberLevels() {
+            let num = 1;
+            structure.forEach(item => {
+                if (!item.isBreak) {
+                    item.level = num++;
+                }
+            });
+        }
+
+        // ===============================
+        // PRESETS & IMPORT/EXPORT
+        // ===============================
+        function loadPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+
+            structure = [];
+            let levelNum = 1;
+
+            preset.structure.forEach(item => {
+                if (item.isBreak) {
+                    structure.push({ ...item, level: 0 });
+                } else {
+                    structure.push({
+                        level: levelNum++,
+                        sb: item.sb,
+                        bb: item.bb,
+                        ante: item.ante,
+                        isBreak: false,
+                        duration: preset.duration
+                    });
+                }
+            });
+
+            levelDuration = preset.duration * 60;
+            document.getElementById('levelDuration').value = preset.duration;
+            currentLevelIndex = 0;
+            resetLevel();
+            saveState();
+
+            showAnnouncement('Preset Loaded', `${preset.name} tournament structure loaded`);
+        }
+
+        function exportStructure() {
+            const data = {
+                name: document.getElementById('tournamentName').value,
+                levelDuration: levelDuration / 60,
+                startingChips: parseInt(document.getElementById('startingChips').value),
+                structure: structure
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `poker-structure-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importStructure() {
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        function doImport() {
+            try {
+                const data = JSON.parse(document.getElementById('importData').value);
+                if (data.structure && Array.isArray(data.structure)) {
+                    structure = data.structure;
+                    renumberLevels();
+
+                    if (data.levelDuration) {
+                        levelDuration = data.levelDuration * 60;
+                        document.getElementById('levelDuration').value = data.levelDuration;
+                    }
+                    if (data.startingChips) {
+                        document.getElementById('startingChips').value = data.startingChips;
+                    }
+                    if (data.name) {
+                        document.getElementById('tournamentName').value = data.name;
+                    }
+
+                    currentLevelIndex = 0;
+                    resetLevel();
+                    closeModal('importModal');
+                    saveState();
+                    showAnnouncement('Import Successful', 'Structure loaded successfully');
+                }
+            } catch (e) {
+                alert('Invalid JSON format');
+            }
+        }
+
+        function saveTournament() {
+            const name = prompt('Enter tournament name:', document.getElementById('tournamentName').value);
+            if (!name) return;
+
+            const saved = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+            saved.push({
+                name,
+                date: new Date().toISOString(),
+                data: {
+                    structure,
+                    levelDuration: levelDuration / 60,
+                    startingChips: parseInt(document.getElementById('startingChips').value),
+                    settings: getSettings()
+                }
+            });
+            localStorage.setItem('savedTournaments', JSON.stringify(saved));
+            renderSavedTournaments();
+        }
+
+        function renderSavedTournaments() {
+            const saved = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+            const container = document.getElementById('savedTournaments');
+
+            if (saved.length === 0) {
+                container.innerHTML = '<p style="color: #888; font-size: 0.9rem;">No saved tournaments</p>';
+                return;
+            }
+
+            container.innerHTML = saved.map((t, i) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(45, 90, 61, 0.2); border-radius: 5px; margin-bottom: 5px;">
+                    <span>${t.name}</span>
+                    <div>
+                        <button class="preset-btn" onclick="loadSavedTournament(${i})">Load</button>
+                        <button class="remove-btn" onclick="deleteSavedTournament(${i})">✕</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadSavedTournament(index) {
+            const saved = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+            if (!saved[index]) return;
+
+            const t = saved[index].data;
+            structure = t.structure;
+            levelDuration = t.levelDuration * 60;
+            document.getElementById('levelDuration').value = t.levelDuration;
+            document.getElementById('startingChips').value = t.startingChips;
+
+            if (t.settings) {
+                Object.entries(t.settings).forEach(([key, value]) => {
+                    const el = document.getElementById(key);
+                    if (el) {
+                        if (el.type === 'checkbox') el.checked = value;
+                        else el.value = value;
+                    }
+                });
+            }
+
+            currentLevelIndex = 0;
+            renumberLevels();
+            resetLevel();
+            showAnnouncement('Tournament Loaded', saved[index].name);
+        }
+
+        function deleteSavedTournament(index) {
+            if (!confirm('Delete this tournament?')) return;
+            const saved = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+            saved.splice(index, 1);
+            localStorage.setItem('savedTournaments', JSON.stringify(saved));
+            renderSavedTournaments();
+        }
+
+        // ===============================
+        // SETTINGS
+        // ===============================
+        function getSettings() {
+            return {
+                tournamentName: document.getElementById('tournamentName')?.value,
+                startingChips: document.getElementById('startingChips')?.value,
+                playerCount: document.getElementById('playerCount')?.value,
+                buyIn: document.getElementById('buyIn')?.value,
+                rebuyAmount: document.getElementById('rebuyAmount')?.value,
+                seatsPerTable: document.getElementById('seatsPerTable')?.value,
+                rebuyEndLevel: document.getElementById('rebuyEndLevel')?.value,
+                warningTime: document.getElementById('warningTime')?.value,
+                dangerTime: document.getElementById('dangerTime')?.value,
+                announceLevels: document.getElementById('announceLevels')?.checked,
+                announceBreaks: document.getElementById('announceBreaks')?.checked,
+                playCountdown: document.getElementById('playCountdown')?.checked,
+                autoAdvance: document.getElementById('autoAdvance')?.checked,
+                payout1: document.getElementById('payout1')?.value,
+                payout2: document.getElementById('payout2')?.value,
+                payout3: document.getElementById('payout3')?.value
+            };
+        }
+
+        function saveSettings() {
+            saveState();
+        }
+
+        // ===============================
+        // TABS
+        // ===============================
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+        }
+
+        // ===============================
+        // MODALS & ANNOUNCEMENTS
+        // ===============================
+        function showAnnouncement(title, text) {
+            document.getElementById('announcementTitle').textContent = title;
+            document.getElementById('announcementText').textContent = text;
+            document.getElementById('announcement').classList.add('active');
+        }
+
+        function closeAnnouncement() {
+            document.getElementById('announcement').classList.remove('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // ===============================
+        // STATE PERSISTENCE
+        // ===============================
+        function saveState() {
+            localStorage.setItem('pokerTimer', JSON.stringify({
+                structure,
+                currentLevelIndex,
+                timeRemaining,
+                totalSeconds,
+                levelDuration,
+                playersRemaining,
+                rebuys,
+                settings: getSettings()
+            }));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('pokerTimer');
+            if (saved) {
+                try {
+                    const state = JSON.parse(saved);
+                    structure = state.structure || getDefaultStructure();
+                    currentLevelIndex = state.currentLevelIndex || 0;
+                    timeRemaining = state.timeRemaining || levelDuration;
+                    totalSeconds = state.totalSeconds || 0;
+                    levelDuration = state.levelDuration || 20 * 60;
+                    playersRemaining = state.playersRemaining || 9;
+                    rebuys = state.rebuys || 0;
+
+                    document.getElementById('levelDuration').value = levelDuration / 60;
+
+                    if (state.settings) {
+                        Object.entries(state.settings).forEach(([key, value]) => {
+                            const el = document.getElementById(key);
+                            if (el) {
+                                if (el.type === 'checkbox') el.checked = value;
+                                else el.value = value;
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.log('Could not restore saved state');
+                    loadPreset('standard');
+                }
+            } else {
+                loadPreset('standard');
+            }
+        }
+
+        function getDefaultStructure() {
+            return presets.standard.structure.map((item, i) => ({
+                ...item,
+                level: item.isBreak ? 0 : i + 1,
+                duration: 20
+            }));
+        }
+
+        // ===============================
+        // EVENT LISTENERS
+        // ===============================
+        document.getElementById('soundToggle').addEventListener('click', toggleSound);
+        document.getElementById('presentationBtn').addEventListener('click', togglePresentation);
+        document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+        document.getElementById('helpBtn').addEventListener('click', () => document.getElementById('helpModal').classList.add('active'));
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    toggleTimer();
+                    break;
+                case 'ArrowLeft':
+                    previousLevel();
+                    break;
+                case 'ArrowRight':
+                    nextLevel();
+                    break;
+                case 'KeyR':
+                    resetLevel();
+                    break;
+                case 'KeyF':
+                    toggleFullscreen();
+                    break;
+                case 'KeyP':
+                    togglePresentation();
+                    break;
+                case 'KeyM':
+                    toggleSound();
+                    break;
+                case 'KeyH':
+                    toggleHandForHand();
+                    break;
+                case 'KeyB':
+                    toggleBubble();
+                    break;
+                case 'Equal':
+                case 'NumpadAdd':
+                    adjustTime(60);
+                    break;
+                case 'Minus':
+                case 'NumpadSubtract':
+                    adjustTime(-60);
+                    break;
+                case 'Digit1': case 'Digit2': case 'Digit3': case 'Digit4':
+                case 'Digit5': case 'Digit6': case 'Digit7': case 'Digit8': case 'Digit9':
+                    jumpToLevel(parseInt(e.code.replace('Digit', '')));
+                    break;
+                case 'Escape':
+                    if (presentationMode) exitPresentation();
+                    closeAnnouncement();
+                    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+                    break;
+            }
+        });
+
+        // Auto-save on state changes
+        window.addEventListener('beforeunload', saveState);
+        setInterval(saveState, 30000); // Auto-save every 30 seconds
+
+        // ===============================
+        // INITIALIZATION
+        // ===============================
+        loadState();
+        updateDisplay();
+        renderSavedTournaments();
+    </script>
+</body>
+</html>
